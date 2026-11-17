@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<title>DT Analex — INF329 SA Compiladores 2-2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;min-height:100vh;padding:20px}
+h1{color:#7dd3fc;font-size:1.3rem;margin-bottom:4px;text-align:center}
+.sub{color:#94a3b8;font-size:.82rem;text-align:center;margin-bottom:20px}
+.wrap{max-width:1100px;margin:0 auto}
+
+/* CARDS DE ESTADOS */
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:24px}
+.info-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:12px 14px}
+.info-card h4{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.ic-teo h4{color:#7dd3fc}
+.ic-c3 h4{color:#86efac}
+.ic-dt h4{color:#a78bfa}
+.ic-warn h4{color:#fcd34d}
+.info-card p{font-size:.8rem;color:#94a3b8;line-height:1.65}
+code{background:#1a2035;border-radius:4px;padding:1px 5px;font-family:'Cascadia Code',monospace;font-size:.8rem;color:#a5f3fc}
+
+/* SVG wrapper */
+.svg-wrap{background:#0a0d14;border:1px solid #21262d;border-radius:14px;overflow:auto;padding:16px;margin-bottom:24px}
+.svg-title{color:#a78bfa;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+
+/* TABLA */
+table{width:100%;border-collapse:collapse;font-size:.8rem;margin:0}
+th{background:#1a2035;color:#7dd3fc;padding:7px 10px;text-align:left;border-bottom:1px solid #2d3448;white-space:nowrap}
+td{padding:6px 10px;border-bottom:1px solid #1a2035;color:#cbd5e1;vertical-align:top}
+tr:last-child td{border-bottom:none}
+td:first-child{color:#a5f3fc;font-family:monospace;font-weight:600;text-align:center}
+.ta{color:#86efac;font-weight:700}
+.te{color:#f87171;font-weight:700}
+.tac{color:#fbbf24;font-weight:700}
+
+/* ACCION SEMANTICA */
+.accion{background:#12161f;border:1px solid #334155;border-radius:8px;padding:14px;margin-top:14px;font-family:'Cascadia Code',monospace;font-size:.82rem;line-height:1.9}
+.ac-lbl{color:#fbbf24;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;font-family:'Segoe UI',sans-serif}
+.kw{color:#a78bfa}
+.str{color:#86efac}
+.ret{color:#7dd3fc}
+.cmt{color:#475569}
+
+/* NOTAS */
+.nota{background:#1e3a5f;border-left:3px solid #7dd3fc;border-radius:0 8px 8px 0;padding:10px 14px;margin-top:12px;font-size:.82rem;color:#94a3b8;line-height:1.6}
+.nota strong{color:#7dd3fc}
+.warn{background:#2d1a00;border-left:3px solid #fbbf24;border-radius:0 8px 8px 0;padding:10px 14px;margin-top:8px;font-size:.82rem;color:#fcd34d;line-height:1.6}
+.warn strong{color:#fbbf24}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Diagrama de Transiciones — Analex</h1>
+<div class="sub">INF329 SA Compiladores · Gestión 2-2026 · Lenguaje híbrido Pascal+Java</div>
+
+<!-- INFO CARDS -->
+<div class="info-grid">
+  <div class="info-card ic-teo">
+    <h4>📋 Lenguaje</h4>
+    <p>Híbrido <strong style="color:#cbd5e1">Pascal + Java</strong><br>
+    Case-insensitive (todo a minúsculas)<br>
+    Variable acumuladora: <code>cad</code></p>
+  </div>
+  <div class="info-card ic-c3">
+    <h4>✅ Tokens reconocidos</h4>
+    <p>PA PC POR MOD MAS MENOS<br>
+    ASSIGN DIV NUM NUMR<br>
+    ID/palabras clave (via TPC)<br>
+    FIN ERROR</p>
+  </div>
+  <div class="info-card ic-dt">
+    <h4>🔲 Estados totales</h4>
+    <p><strong style="color:#cbd5e1">19 estados</strong> (q0 – q18)<br>
+    q0 = estado inicial<br>
+    Estados finales: q1–q9, q11, q14, q16, q17, q18</p>
+  </div>
+  <div class="info-card ic-warn">
+    <h4>⚠️ TPC</h4>
+    <p>En q16, antes de devolver ID se consulta la TPC:<br>
+    <code>mod</code> → MOD<br>
+    <code>div</code> → DIV<br>
+    otro → ID, -1</p>
+  </div>
+</div>
+
+<!-- DIAGRAMA SVG -->
+<div class="svg-wrap">
+  <div class="svg-title">Diagrama de Transición completo</div>
+  <svg viewBox="0 0 1060 780" width="1060" height="780" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L9,3z" fill="#94a3b8"/>
+      </marker>
+      <marker id="arr-g" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L9,3z" fill="#86efac"/>
+      </marker>
+      <marker id="arr-r" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L9,3z" fill="#f87171"/>
+      </marker>
+      <marker id="arr-y" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L9,3z" fill="#fbbf24"/>
+      </marker>
+    </defs>
+    <rect width="1060" height="780" fill="#0a0d14" rx="12"/>
+
+    <!-- ══ HELPER: estado normal ══ -->
+    <!-- q0 — centro -->
+    <circle cx="400" cy="380" r="30" fill="#0d1117" stroke="#7dd3fc" stroke-width="2.5"/>
+    <text x="400" y="385" text-anchor="middle" fill="#7dd3fc" font-size="16" font-weight="bold" font-family="Segoe UI">0</text>
+    <!-- q0 loop espacio -->
+    <path d="M374,352 Q356,320 400,310 Q444,320 426,352" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="400" y="302" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Segoe UI">Espacio</text>
+    <!-- cad="" al inicio -->
+    <text x="336" y="370" text-anchor="end" fill="#fbbf24" font-size="11" font-family="Segoe UI" font-style="italic">String cad=""</text>
+
+    <!-- ══ ESTADOS FINALES (simples, 1 char) ══ -->
+
+    <!-- q1 PA -->
+    <circle cx="790" cy="60" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="60" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="65" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">1</text>
+    <text x="840" y="64" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;PA,_&gt;</text>
+
+    <!-- q2 PC -->
+    <circle cx="790" cy="130" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="130" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="135" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">2</text>
+    <text x="840" y="134" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;PC,_&gt;</text>
+
+    <!-- q3 POR -->
+    <circle cx="790" cy="200" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="200" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="205" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">3</text>
+    <text x="840" y="204" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;POR,_&gt;</text>
+
+    <!-- q4 MOD -->
+    <circle cx="790" cy="270" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="270" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="275" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">4</text>
+    <text x="840" y="274" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;MOD,_&gt;</text>
+
+    <!-- q5 MAS -->
+    <circle cx="790" cy="340" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="340" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="345" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">5</text>
+    <text x="840" y="344" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;MAS,_&gt;</text>
+
+    <!-- q6 intermedio MENOS -->
+    <circle cx="620" cy="390" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <text x="620" y="395" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">6</text>
+    <text x="620" y="428" text-anchor="middle" fill="#475569" font-size="9" font-family="Segoe UI">leí '-'</text>
+
+    <!-- q7 MENOS final -->
+    <circle cx="790" cy="410" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="410" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="415" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">7</text>
+    <text x="840" y="414" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;MENOS,_&gt;</text>
+
+    <!-- q8 ASSIGN -->
+    <circle cx="790" cy="480" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="480" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="485" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">8</text>
+    <text x="840" y="484" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;ASSIGN,_&gt;</text>
+
+    <!-- ══ CADENA de '/' ══ -->
+    <!-- q10 intermedio '/' -->
+    <circle cx="540" cy="490" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <text x="540" y="495" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">10</text>
+    <text x="540" y="528" text-anchor="middle" fill="#475569" font-size="9" font-family="Segoe UI">leí '/'</text>
+
+    <!-- q9 DIV final -->
+    <circle cx="790" cy="550" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="550" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="555" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">9</text>
+    <text x="840" y="554" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;DIV,_&gt;</text>
+
+    <!-- q11 NUM final -->
+    <circle cx="790" cy="620" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="620" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="625" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">11</text>
+    <text x="840" y="624" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;NUM,cad&gt;</text>
+
+    <!-- ══ CADENA de '.' ══ -->
+    <!-- q12 intermedio '.' -->
+    <circle cx="400" cy="560" r="26" fill="#0d1117" stroke="#a78bfa" stroke-width="1.8"/>
+    <text x="400" y="565" text-anchor="middle" fill="#a78bfa" font-size="14" font-weight="bold" font-family="Segoe UI">12</text>
+    <text x="400" y="596" text-anchor="middle" fill="#475569" font-size="9" font-family="Segoe UI">leí '.'</text>
+    <!-- q12 loop dígito -->
+    <path d="M386,540 Q370,516 400,510 Q430,516 414,540" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="400" y="506" text-anchor="middle" fill="#e2e8f0" font-size="10" font-family="Segoe UI">Dígito / cad+=cc</text>
+
+    <!-- q13 acumula decimal -->
+    <circle cx="540" cy="620" r="26" fill="#0d1117" stroke="#a78bfa" stroke-width="1.8"/>
+    <text x="540" y="625" text-anchor="middle" fill="#a78bfa" font-size="14" font-weight="bold" font-family="Segoe UI">13</text>
+    <text x="540" y="656" text-anchor="middle" fill="#475569" font-size="9" font-family="Segoe UI">parte decimal</text>
+    <!-- q13 loop dígito -->
+    <path d="M526,644 Q506,666 540,672 Q574,666 554,644" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="540" y="680" text-anchor="middle" fill="#fbbf24" font-size="10" font-family="Segoe UI">Dígito / cad+=cc</text>
+
+    <!-- q14 NUMR final -->
+    <circle cx="790" cy="700" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <circle cx="790" cy="700" r="20" fill="none" stroke="#e2e8f0" stroke-width="1.2"/>
+    <text x="790" y="705" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">14</text>
+    <text x="840" y="704" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;NUMR,cad&gt;</text>
+
+    <!-- ══ CADENA de LETRA (ID/TPC) ══ -->
+    <!-- q15 primer char letra -->
+    <circle cx="200" cy="480" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <text x="200" y="485" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">15</text>
+    <text x="200" y="516" text-anchor="middle" fill="#475569" font-size="9" font-family="Segoe UI">1ra letra</text>
+
+    <!-- q16 acumula ID -->
+    <circle cx="200" cy="600" r="26" fill="#0d1117" stroke="#e2e8f0" stroke-width="1.8"/>
+    <text x="200" y="605" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="bold" font-family="Segoe UI">16</text>
+    <text x="200" y="636" text-anchor="middle" fill="#475569" font-size="9" font-family="Segoe UI">acumula ID</text>
+    <!-- q16 loop letra/dígito -->
+    <path d="M186,576 Q164,554 200,546 Q236,554 214,576" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="200" y="542" text-anchor="middle" fill="#fbbf24" font-size="10" font-family="Segoe UI">letra|dígito / cad+=cc</text>
+
+    <!-- q17 ERROR -->
+    <circle cx="80" cy="560" r="26" fill="#4c0519" stroke="#f87171" stroke-width="1.8"/>
+    <circle cx="80" cy="560" r="20" fill="none" stroke="#f87171" stroke-width="1.2"/>
+    <text x="80" y="565" text-anchor="middle" fill="#f87171" font-size="13" font-weight="bold" font-family="Segoe UI">17</text>
+    <text x="20" y="564" text-anchor="end" fill="#f87171" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;ERROR,_&gt;</text>
+
+    <!-- q18 FIN -->
+    <circle cx="80" cy="450" r="26" fill="#14532d" stroke="#86efac" stroke-width="1.8"/>
+    <circle cx="80" cy="450" r="20" fill="none" stroke="#86efac" stroke-width="1.2"/>
+    <text x="80" y="455" text-anchor="middle" fill="#86efac" font-size="13" font-weight="bold" font-family="Segoe UI">18</text>
+    <text x="20" y="454" text-anchor="end" fill="#86efac" font-size="12" font-family="Segoe UI" font-weight="bold">&lt;FIN,_&gt;</text>
+
+    <!-- ══════════════════ TRANSICIONES DESDE q0 ══════════════════ -->
+
+    <!-- 0 → 1  '(' -->
+    <path d="M424,358 Q606,196 764,68" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="590" y="196" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">'('</text>
+
+    <!-- 0 → 2  ')' -->
+    <path d="M428,364 Q614,248 764,136" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="610" y="258" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">')'</text>
+
+    <!-- 0 → 3  '*' -->
+    <path d="M430,370 Q620,296 764,206" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="624" y="300" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">'*'</text>
+
+    <!-- 0 → 4  '%' -->
+    <path d="M430,376 Q624,342 764,274" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="630" y="348" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">'%'</text>
+
+    <!-- 0 → 5  '+' -->
+    <path d="M428,382 Q618,374 764,344" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="624" y="376" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">'+'</text>
+
+    <!-- 0 → 6  '-' cad=cc -->
+    <path d="M424,394 Q508,394 594,392" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="510" y="384" text-anchor="middle" fill="#fbbf24" font-size="11" font-family="Segoe UI">'-' / cad=cc</text>
+
+    <!-- 0 → q(ASSIGN via ':=')  simplificado como → q10 con ':' -->
+    <!-- en realidad '>' → ASSIGN  — según imagen el '>' va directo a q8 -->
+    <!-- 0 → 8  '>' := -->
+    <path d="M424,400 Q570,448 764,484" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="590" y="430" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">'>' (ASSIGN)</text>
+
+    <!-- 0 → 10  '/' -->
+    <path d="M412,406 Q474,460 514,488" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="454" y="446" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">'/'</text>
+
+    <!-- 0 → Dígito → q10 (num) cad=cc -->
+    <path d="M408,408 Q470,480 516,488" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="6,3" marker-end="url(#arr-y)"/>
+    <text x="430" y="470" text-anchor="middle" fill="#fbbf24" font-size="11" font-family="Segoe UI">Dígito / cad=cc</text>
+
+    <!-- 0 → '.' → q12 -->
+    <path d="M394,408 Q396,474 398,534" fill="none" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="378" y="474" text-anchor="end" fill="#a78bfa" font-size="11" font-family="Segoe UI">'.'</text>
+
+    <!-- 0 → Letra → q15 cad=cc -->
+    <path d="M374,396 Q294,434 226,476" fill="none" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="296" y="426" text-anchor="middle" fill="#fbbf24" font-size="11" font-family="Segoe UI">Letra / cad=cc</text>
+
+    <!-- 0 → EOF → q18 -->
+    <path d="M372,386 Q230,420 108,448" fill="none" stroke="#86efac" stroke-width="1.6" marker-end="url(#arr-g)"/>
+    <text x="238" y="406" text-anchor="middle" fill="#86efac" font-size="11" font-family="Segoe UI">EOF</text>
+
+    <!-- 0 → OTRO → q17 -->
+    <path d="M372,392 Q230,480 108,554" fill="none" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-r)"/>
+    <text x="230" y="494" text-anchor="middle" fill="#f87171" font-size="11" font-family="Segoe UI">Otro</text>
+
+    <!-- ══════════════════ TRANSICIONES INTERMEDIAS ══════════════════ -->
+
+    <!-- q6 → q7 OTRO (retrocede) -->
+    <line x1="646" y1="402" x2="764" y2="412" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="706" y="400" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">Otro</text>
+
+    <!-- q10 → q9 OTRO (es DIV solo) -->
+    <line x1="566" y1="496" x2="764" y2="550" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="680" y="516" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">Otro</text>
+
+    <!-- q10 → q11 Dígito (NUM) cad+=cc -->
+    <path d="M560,504 Q672,560 764,620" fill="none" stroke="#fbbf24" stroke-width="1.6" marker-end="url(#arr-y)"/>
+    <text x="682" y="554" text-anchor="middle" fill="#fbbf24" font-size="11" font-family="Segoe UI">Dígito / cad+=cc</text>
+
+    <!-- q10 → (loop dígito desde q10, parte entera NUM) -->
+    <path d="M526,476 Q506,454 540,448 Q574,454 554,476" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
+    <text x="540" y="444" text-anchor="middle" fill="#fbbf24" font-size="10" font-family="Segoe UI">Dígito / cad+=cc</text>
+
+    <!-- q12 → q13 Dígito (empieza decimal) -->
+    <line x1="420" y1="578" x2="520" y2="608" stroke="#a78bfa" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="456" y="600" text-anchor="middle" fill="#fbbf24" font-size="11" font-family="Segoe UI">Dígito / cad+=cc</text>
+
+    <!-- q13 → q14 OTRO -->
+    <line x1="566" y1="622" x2="764" y2="700" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="680" y="654" text-anchor="middle" fill="#e2e8f0" font-size="11" font-family="Segoe UI">Otro</text>
+
+    <!-- q15 → q16 letra|dígito cad+=cc -->
+    <line x1="200" y1="506" x2="200" y2="574" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="216" y="542" text-anchor="start" fill="#fbbf24" font-size="10" font-family="Segoe UI">letra|díg / cad+=cc</text>
+
+    <!-- q15 → q17 OTRO (una sola letra no reconocida) -->
+    <path d="M178,496 Q128,526 108,554" fill="none" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr-r)"/>
+    <text x="128" y="514" text-anchor="middle" fill="#f87171" font-size="10" font-family="Segoe UI">Otro</text>
+
+    <!-- q16 → q17 (OTRO desde q16 — pero en realidad va a TPC) -->
+    <!-- q16 acepta con OTRO: acción semántica TPC -->
+    <line x1="174" y1="606" x2="106" y2="566" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arr)"/>
+    <text x="132" y="596" text-anchor="middle" fill="#e2e8f0" font-size="10" font-family="Segoe UI">Otro → TPC</text>
+
+    <!-- ══ ACCION SEMANTICA box ══ -->
+    <rect x="30" y="650" width="310" height="110" fill="#12161f" rx="8" stroke="#334155"/>
+    <text x="185" y="670" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold" font-family="Segoe UI">Accion semantica (q16, Otro):</text>
+    <text x="50" y="692" fill="#a78bfa" font-size="11" font-family="'Cascadia Code',monospace">if (cad == "mod")</text>
+    <text x="68" y="710" fill="#7dd3fc" font-size="11" font-family="'Cascadia Code',monospace">return &lt;MOD, _&gt;</text>
+    <text x="50" y="728" fill="#a78bfa" font-size="11" font-family="'Cascadia Code',monospace">else if (cad == "div")</text>
+    <text x="68" y="746" fill="#7dd3fc" font-size="11" font-family="'Cascadia Code',monospace">return &lt;DIV, _&gt;</text>
+    <text x="50" y="748" fill="#475569" font-size="10" font-family="'Cascadia Code',monospace">...</text>
+
+    <!-- Nota: en realidad la TPC completa está en Analex -->
+    <text x="380" y="750" text-anchor="middle" fill="#475569" font-size="10" font-family="Segoe UI">* La TPC completa está implementada</text>
+    <text x="380" y="764" text-anchor="middle" fill="#475569" font-size="10" font-family="Segoe UI">  en el HashMap privado de Analex.java</text>
+  </svg>
+</div>
+
+<!-- TABLA DE TRANSICIÓN -->
+<div style="background:#161b22;border:1px solid #21262d;border-radius:14px;padding:20px;margin-bottom:24px">
+  <p style="color:#a78bfa;font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">📊 Tabla de Transición — resumen</p>
+  <div style="overflow-x:auto">
+  <table>
+    <tr>
+      <th>Estado</th><th>Char / Clase</th><th>Acción / cad</th><th>Siguiente</th><th>Token devuelto</th>
+    </tr>
+    <tr><td>0</td><td>Espacio</td><td>Avanzar</td><td>0 (loop)</td><td>—</td></tr>
+    <tr><td>0</td><td>EOF</td><td>—</td><td>18</td><td class="ta">&lt;FIN,_&gt;</td></tr>
+    <tr><td>0</td><td>Otro (char inválido)</td><td>Avanzar</td><td>17</td><td class="te">&lt;ERROR,_&gt;</td></tr>
+    <tr><td>0</td><td>'('</td><td>Avanzar</td><td>1</td><td class="ta">&lt;PA,_&gt;</td></tr>
+    <tr><td>0</td><td>')'</td><td>Avanzar</td><td>2</td><td class="ta">&lt;PC,_&gt;</td></tr>
+    <tr><td>0</td><td>'*'</td><td>Avanzar</td><td>3</td><td class="ta">&lt;POR,_&gt;</td></tr>
+    <tr><td>0</td><td>'%'</td><td>Avanzar</td><td>4</td><td class="ta">&lt;MOD,_&gt;</td></tr>
+    <tr><td>0</td><td>'+'</td><td>Avanzar</td><td>5</td><td class="ta">&lt;MAS,_&gt;</td></tr>
+    <tr><td>0</td><td>'-' / cad=cc</td><td>Avanzar</td><td>6</td><td>—</td></tr>
+    <tr><td>0</td><td>'&gt;' (ASSIGN)</td><td>Avanzar</td><td>8</td><td class="ta">&lt;ASSIGN,_&gt;</td></tr>
+    <tr><td>0</td><td>'/' </td><td>Avanzar</td><td>10</td><td>—</td></tr>
+    <tr><td>0</td><td>Dígito / cad=cc</td><td>Avanzar</td><td>10</td><td>—</td></tr>
+    <tr><td>0</td><td>'.' </td><td>Avanzar</td><td>12</td><td>—</td></tr>
+    <tr><td>0</td><td>Letra / cad=cc</td><td>Avanzar</td><td>15</td><td>—</td></tr>
+    <tr><td style="color:#fbbf24">6</td><td>Otro (retrocede)</td><td>—</td><td>7</td><td class="ta">&lt;MENOS,_&gt;</td></tr>
+    <tr><td style="color:#fbbf24">10</td><td>Dígito / cad+=cc</td><td>Avanzar</td><td>10 (loop)</td><td>—</td></tr>
+    <tr><td style="color:#fbbf24">10</td><td>Dígito→q11 (fin NUM)</td><td>Retrocede</td><td>11</td><td class="ta">&lt;NUM,cad&gt;</td></tr>
+    <tr><td style="color:#fbbf24">10</td><td>Otro (es DIV)</td><td>Retrocede</td><td>9</td><td class="ta">&lt;DIV,_&gt;</td></tr>
+    <tr><td style="color:#a78bfa">12</td><td>Dígito / cad+=cc</td><td>Avanzar</td><td>12 (loop)</td><td>—</td></tr>
+    <tr><td style="color:#a78bfa">12</td><td>Dígito→q13</td><td>Avanzar</td><td>13</td><td>—</td></tr>
+    <tr><td style="color:#a78bfa">13</td><td>Dígito / cad+=cc</td><td>Avanzar</td><td>13 (loop)</td><td>—</td></tr>
+    <tr><td style="color:#a78bfa">13</td><td>Otro (retrocede)</td><td>—</td><td>14</td><td class="ta">&lt;NUMR,cad&gt;</td></tr>
+    <tr><td>15</td><td>Letra|Dígito / cad+=cc</td><td>Avanzar</td><td>16</td><td>—</td></tr>
+    <tr><td>15</td><td>Otro</td><td>—</td><td>17</td><td class="te">&lt;ERROR,_&gt;</td></tr>
+    <tr><td>16</td><td>Letra|Dígito / cad+=cc</td><td>Avanzar</td><td>16 (loop)</td><td>—</td></tr>
+    <tr><td>16</td><td>Otro (retrocede)</td><td class="tac">TPC(cad)</td><td>—</td><td class="ta">&lt;ID,-1&gt; / &lt;KW,_&gt;</td></tr>
+  </table>
+  </div>
+
+  <!-- ACCION SEMANTICA -->
+  <div style="margin-top:16px">
+    <div class="ac-lbl">Acción semántica — q16, Otro (consulta TPC):</div>
+    <div class="accion">
+<span class="kw">if</span> (cad == <span class="str">"mod"</span>)       <span class="ret">return</span> &lt;MOD, _&gt;
+<span class="kw">else if</span> (cad == <span class="str">"div"</span>)  <span class="ret">return</span> &lt;DIV, _&gt;
+<span class="kw">else if</span> (TPC.containsKey(cad)) <span class="ret">return</span> &lt;TPC[cad], _&gt;  <span class="cmt">// palabras reservadas</span>
+<span class="kw">else</span>                        <span class="ret">return</span> &lt;ID, -1&gt;         <span class="cmt">// identificador</span>
+    </div>
+  </div>
+</div>
+
+<!-- VERIFICACION DEL CODIGO -->
+<div style="background:#161b22;border:1px solid #21262d;border-radius:14px;padding:20px;margin-bottom:24px">
+  <p style="color:#86efac;font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px">✅ Correspondencia DT ↔ Analex.java</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div style="background:#0a1f0e;border:1px solid #166534;border-radius:8px;padding:12px 14px">
+      <p style="color:#86efac;font-size:.82rem;font-weight:700;margin-bottom:8px">Lo que dice el DT dibujado</p>
+      <ul style="padding-left:16px;font-size:.8rem;color:#94a3b8;line-height:1.9">
+        <li>q0 = estado inicial, loop en Espacio</li>
+        <li>q10 = leímos '/', puede ser NUM o DIV</li>
+        <li>q12 = leímos '.', empieza NUMR</li>
+        <li>q15 = leímos Letra, empieza ID/KW</li>
+        <li>q16 = acumula letras/dígitos → TPC</li>
+        <li>q17 = ERROR</li>
+        <li>q18 = FIN (EOF)</li>
+      </ul>
+    </div>
+    <div style="background:#1e3a5f;border:1px solid #2563eb;border-radius:8px;padding:12px 14px">
+      <p style="color:#7dd3fc;font-size:.82rem;font-weight:700;margin-bottom:8px">Implementado en Analex.java</p>
+      <ul style="padding-left:16px;font-size:.8rem;color:#94a3b8;line-height:1.9">
+        <li><code>case 0:</code> → estado inicial</li>
+        <li><code>case 7:</code> → leímos '/', hacia DIV o comentario</li>
+        <li><code>case 1:</code> → acumula NUM (dígitos)</li>
+        <li><code>case 2:</code> → acumula ID/KW</li>
+        <li>Consulta <code>TPC.containsKey(ac)</code></li>
+        <li><code>Token.ERROR</code> para chars inválidos</li>
+        <li><code>Token.FIN</code> para EOF</li>
+      </ul>
+    </div>
+  </div>
+  <div class="nota">
+    <strong>Nota sobre NUMR:</strong> el DT dibujado tiene un estado intermedio (q12) para el punto decimal. En el <code>Analex.java</code> implementado, esto corresponde al estado 4 (ent+punto) que luego pasa al estado 2 (parte decimal). La lógica es equivalente.
+  </div>
+  <div class="warn">
+    <strong>Para la defensa:</strong> llevá el DT dibujado a mano tal como está en la imagen. El docente lo pide explícitamente en el enunciado: <em>"No se olvide de llevar el dibujo de su Diagrama de Transiciones (dt)"</em>. Podés imprimirlo o dibujarlo en papel en base a este HTML.
+  </div>
+</div>
+
+</div><!-- /wrap -->
+</body>
+</html>

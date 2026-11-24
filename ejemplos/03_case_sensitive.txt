@@ -1,0 +1,4 @@
+while WHILE While
+Program program
+Div div MOD mod
+Integer integer BOOLEAN boolean

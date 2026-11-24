@@ -1,6 +1,11 @@
 # Guía de Código — Analex2-2026
 ## INF329 SA Compiladores · Gestión 2-2026
 
+> **Nombres actualizados.** Esta guía se escribió con los nombres originales del código
+> (`M`, `R`, `ac`, `pos`, `nom`, `atr`, `estado`, `chk`…). Después se renombraron para que se
+> entiendan solos. **El comportamiento no cambió.** La tabla *antes → ahora* está en la
+> [sección 6.2](#62-glosario-de-nombres-antes--ahora): úsala para leer los fragmentos de código de esta guía.
+
 > **Propósito de este documento:** explicar cada variable, constante y método del proyecto
 > de forma clara, para que sea fácil estudiar el código y hacer cambios en la defensa.
 
@@ -465,7 +470,7 @@ Estado  │ Descripción                                │ Entra cuando...
 
 ## 5. Cómo hacer cambios frecuentes
 
-### ✅ Agregar una nueva palabra clave
+### Agregar una nueva palabra clave
 
 **Ejemplo:** quiero agregar la palabra `"loop"` como token nuevo.
 
@@ -488,7 +493,7 @@ TPC.put("loop", Token.LOOP);
 
 ---
 
-### ✅ Cambiar de case-insensitive a case-sensitive
+### Cambiar de case-insensitive a case-sensitive
 
 Buscar en `Analex.java` las dos líneas con `Character.toLowerCase(c)`:
 
@@ -509,7 +514,7 @@ TPC.put("VAR", Token.VAR);           // etc.
 
 ---
 
-### ✅ Agregar un nuevo tipo de comentario
+### Agregar un nuevo tipo de comentario
 
 **Ejemplo:** comentario que va de `//` hasta `//` (en vez de EOLN).
 
@@ -541,7 +546,7 @@ case 8:
 
 ---
 
-### ✅ Agregar un nuevo operador de un solo char
+### Agregar un nuevo operador de un solo char
 
 **Ejemplo:** quiero que `^` sea el operador potencia `POT`.
 
@@ -559,7 +564,7 @@ if (c == '^') { ac = "^"; M.avanzar(); R.set(Token.POT, 0); return; }
 
 ---
 
-### ✅ Agregar un nuevo operador de dos chars
+### Agregar un nuevo operador de dos chars
 
 **Ejemplo:** quiero que `**` sea potencia.
 
@@ -591,33 +596,102 @@ case 13:
 
 ## 6. Estándares de programación usados
 
-### Nombres de variables
+### 6.1 Convenciones
 
 | Elemento | Convención | Ejemplo |
 |---|---|---|
-| Constantes de clase | `UPPER_SNAKE_CASE` | `Token.WHILE`, `Cinta.EOF` |
-| Variables de instancia | `camelCase` corto | `nom`, `atr`, `ac`, `pos` |
-| Métodos públicos | `camelCase` | `getNom()`, `avanzar()` |
-| Métodos privados | `camelCase` | `esDigito()`, `esLetra()` |
 | Clases | `PascalCase` | `Token`, `Cinta`, `Analex` |
+| Constantes de clase | `MAYUSCULAS_CON_GUION_BAJO` | `Token.WHILE`, `Cinta.EOF`, `CASE_SENSITIVE` |
+| Estados del DT | `Q<numero>_<QUE_HACE>` (el número es el del dibujo) | `Q8_COMENTARIO_DE_LINEA` |
+| Campos y variables | `camelCase` que diga qué guardan | `acumuladorLexema`, `caracterActual`, `estadoActual` |
+| Métodos | `camelCase` que diga qué hacen (si es largo, no importa) | `saltarRetornosDeCarro()`, `atributoDelTipo()` |
+| Booleanos / preguntas | prefijo `es...` | `esDigito()`, `esLetra()`, `esEspacio()` |
+| Javadoc | cada clase y método explica *qué hace*, en palabras simples | `/** Dibuja la cinta alrededor del cabezal */` |
+| `toString()` | cada clase se puede imprimir con `System.out.println(objeto)` | `System.out.println(cinta)` |
 
-### Por qué los nombres son cortos en el Analex
+**Vocabulario del curso que se conservó** (porque así lo usa el docente, el DT y la pizarra):
+`cc()`, `avanzar()`, `init()`, `Preanalisis()`, `lexema()`, `dt()`, `TPC`, `EOF`, `EOLN`,
+`onComunicate()`, `getNom()`, `getAtr()`, `getPos()`, `getFila()`, `getColumna()`.
 
-Los nombres cortos (`M`, `R`, `ac`, `pos`) siguen la convención de los libros de
-compiladores (Aho, Lam, Sethi, Ullman — "Dragon Book"):
+### 6.2 Glosario de nombres (antes → ahora)
 
-| Variable | Nombre completo | Por qué corto |
-|---|---|---|
-| `M` | Máquina (Cinta) | Convención del docente |
-| `R` | Result (Token resultado) | Convención de compiladores |
-| `ac` | Accumulator | Término técnico estándar |
-| `pos` | Position | Suficientemente descriptivo |
+**Cinta.java**
 
-### Principios aplicados
+| Antes | Ahora |
+|---|---|
+| `charAnt` | `caracterAnterior` |
+| `col` | `columna` |
+| `CR` / `LF` | `RETORNO_DE_CARRO` / `SALTO_DE_LINEA` |
+| `ignoreCR()` | `saltarRetornosDeCarro()` |
+| `forward()` | `moverCabezalUnaCeldaALaDerecha()` |
+| *(nuevo)* | `toString()` dibuja la cinta con el cabezal · `nombreVisible(char)` |
 
-- **Un solo nivel de abstracción por método:** `dt()` solo decide estados, los helpers `esDigito()`, `esLetra()`, `esEspacio()` encapsulan la lógica de clasificación de chars.
-- **Constantes en lugar de magic numbers:** nunca escribir `if (c == 47)` sino `if (c == '/')`.
-- **Separación de responsabilidades:** `Token` = datos, `Cinta` = entrada, `Analex` = lógica.
+**Token.java**
+
+| Antes | Ahora |
+|---|---|
+| `nom` / `atr` (campos) | `nombre` / `atributo` |
+| `atrToString()` | `atributoComoTexto()` |
+| `get(lista, i)` | `elementoODesconocido(lista, i)` |
+| `NOMtokenSTR` / `OPRELstr` / `TIPOstr` | `NOMBRES_DE_TOKEN` / `NOMBRES_ATRIBUTO_OPREL` / `NOMBRES_ATRIBUTO_TIPO` |
+| `DESCONOCIDO` | `TEXTO_DESCONOCIDO` |
+| *(nuevo)* | `ULTIMO_NOMBRE_DE_TOKEN` (subirlo al agregar un token) · `descripcionDetallada()` |
+
+**Analex.java**
+
+| Antes | Ahora |
+|---|---|
+| `M` | `cinta` |
+| `R` | `tokenPreanalisis` |
+| `ac` | `acumuladorLexema` |
+| `pos` | `posicionInicioLexema` |
+| `estado` | `estadoActual` |
+| `c` (en `dt()`) | `caracterActual` |
+| `nom` / `atr` (en `dt()`) | `nombreDelToken` / `atributoDelToken` |
+| `tipoAtr()` | `atributoDelTipo()` |
+| `case 0 … case 13` | `Q0_INICIAL`, `Q1_NUMERO`, `Q2_IDENTIFICADOR`, `Q3_LEIDO_DOS_PUNTOS`, `Q4_LEIDO_MENOR`, `Q5_LEIDO_MAYOR`, `Q6_LEIDO_ADMIRACION`, `Q7_LEIDO_BARRA`, `Q8_COMENTARIO_DE_LINEA`, `Q9_COMENTARIO_DE_BLOQUE`, `Q10_BLOQUE_LEIDO_ASTERISCO`, `Q11_LITERAL_COMILLA_SIMPLE`, `Q12_LITERAL_COMILLA_DOBLE`, `Q13_LINEA_LEIDA_SEGUNDA_BARRA` |
+| *(nuevo)* | `toString()` muestra el token actual, el lexema y la cinta |
+
+**Main.java**
+
+| Antes | Ahora |
+|---|---|
+| `chk` | `verificarTokenCompleto` |
+| `chkNom` | `verificarSoloNombre` |
+| `chkNomNot` | `verificarNombreDistinto` |
+| `chkAtrNot` | `verificarAtributoDistinto` |
+| `chkStr` | `verificarTextoDelToken` |
+| `chkSeq` | `verificarSecuenciaDeNombres` |
+| `titulo` | `imprimirTitulo` |
+| `ok` / `fail` | `verificacionesCorrectas` / `verificacionesFallidas` |
+
+### 6.3 `toString()` para entender desde el `main`
+
+Cada clase se imprime con un `println` y muestra su estado:
+
+```
+System.out.println(cinta);
+Cinta{ cabezal=3, fila=0, columna=3, cc=c }
+  [a][b][EOLN][c][d][EOF]
+               ^
+
+System.out.println(analizador);
+Analex{ preanalisis=<NUM,30>, lexema="10", inicioDelLexema=5 }
+  Cinta{ cabezal=7, fila=0, columna=7, cc=; }
+    [x][' '][:][=][' '][1][0][;][EOF]
+                              ^
+
+System.out.println(token);                       // <OPREL,MAI>
+System.out.println(token.descripcionDetallada()); // Token{ nombre=OPREL(40), atributo=4 → <OPREL,MAI> }
+```
+`Cinta`, `Token` y `Analex` tienen además un `main` de demostración: clic derecho sobre el archivo → *Run File*.
+
+### 6.4 Principios aplicados
+
+- **Nombres que explican:** una variable o método se entiende sin leer su cuerpo.
+- **Un solo nivel de abstracción por método:** `dt()` solo decide estados; `esDigito()`, `esLetra()`, `esEspacio()` encapsulan la clasificación de chars.
+- **Constantes en lugar de números mágicos:** `case Q8_COMENTARIO_DE_LINEA`, no `case 8`; `c == '/'`, no `c == 47`.
+- **Separación de responsabilidades:** `Token` = datos, `Cinta` = entrada, `Analex` = lógica, `Interfaz` = pantalla.
 - **Fail-fast:** estados desconocidos devuelven `ERROR` inmediatamente en el `default` del switch.
 
 ---

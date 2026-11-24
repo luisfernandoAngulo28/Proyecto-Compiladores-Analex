@@ -2,35 +2,71 @@ package analex;
 
 import java.util.HashMap;
 
-/*
- * Analizador Lexico (Scanner) para el lenguaje Pascal+Java hibrido.
- * INF329-SA Compiladores - Gestion 2-2026
+/**
+ * Analizador Lexico (Scanner) para el lenguaje hibrido Pascal + Java.
+ * INF329-SA Compiladores - Gestion 2-2026.
  *
- * El lenguaje es CASE-INSENSITIVE: todo se convierte a minusculas
- * antes de comparar con la TPC.
+ * <p>Analex es una "cinta de tokens": lee la {@link Cinta} de caracteres y va
+ * entregando los tokens de uno en uno.
+ * <ul>
+ *   <li>{@link #Preanalisis()} = el token actual (no lo consume).</li>
+ *   <li>{@link #lexema()}      = el texto con el que se formo ese token.</li>
+ *   <li>{@link #avanzar()}     = pasa al token siguiente.</li>
+ * </ul>
  *
- * Tokens reconocidos:
+ * <p>El lenguaje es CASE-SENSITIVE (ver interruptor {@link #CASE_SENSITIVE}): las palabras
+ * clave se reconocen solo en minusculas.
+ *
+ * <p>Tokens reconocidos:
+ * <pre>
  *   Palabras clave: program, var, procedure/void, begin/{, end/},
  *                   if, then, else, for, to, do, downto, while,
  *                   case, of, repeat, until, read, readln, print,
- *                   println, not/!, and/&, or/|, mod/%, div
+ *                   println, not/!, and/&amp;, or/|, mod/%, div
  *   Tipos: boolean, integer
  *   Operadores: + - * , : ; ( ) :=
- *   Operadores relacionales: = < > <= >= <> !=
+ *   Operadores relacionales: = &lt; &gt; &lt;= &gt;= &lt;&gt; !=
  *   NUM     (numeros enteros sin signo)
  *   ID      (empieza con letra, sigue letras/digitos)
  *   LITERAL (chars entre comillas simples o dobles)
  *   Comentarios // y comentarios bloque - se ignoran
+ * </pre>
  */
-public class Analex {   // Es una cinta de tokens
+public class Analex {
 
-    private Cinta M;
-    private Token R;        // Resultado del dt (Preanálisis)
-    private String ac;      // Acumulador de lexema
-    private int pos;        // Posición de inicio del lexema
+    // ─── INTERRUPTORES: enunciado (PDF) vs. cambios de la defensa ───────────
+    // Valor actual = comportamiento de la defensa. Entre parentesis: lo que dice el PDF.
+    /** true: distingue MAYUSCULAS/minusculas.  (PDF: false = NO es case-sensitive) */
+    public static final boolean CASE_SENSITIVE = true;
+    /** true: "// texto //" cierra el comentario con otro "//".  (PDF: false = hasta fin de linea) */
+    public static final boolean COMENTARIO_CIERRA_CON_DOBLE_BARRA = true;
+    /** true: reconoce "por" y "sumi" como palabras clave.  (PDF: false = no existen) */
+    public static final boolean EXTRAS_DEFENSA = true;
+    /** true: el ID acepta '_'.  (PDF: false = solo letras y digitos) */
+    public static final boolean ID_ACEPTA_GUION_BAJO = true;
 
-    // ─── TPC — Tabla de Palabras Clave ─────────────────────────────────────
-    // Mapea: lexema en minúsculas → nombre del token (entero)
+    // ─── Campos de la clase ──────────────────────────────────────────────────
+    /** La cinta de caracteres que se esta leyendo. */
+    private Cinta cinta;
+
+    /** Preanalisis: el token que dejo listo el ultimo dt() (el token actual). */
+    private Token tokenPreanalisis;
+
+    /** Acumulador del lexema: los chars que el dt() va juntando mientras lee un token. */
+    private String acumuladorLexema;
+
+    /** Celda de la cinta donde empieza el lexema actual (para resaltarlo en el editor). */
+    private int posicionInicioLexema;
+
+    /** Explicacion del ultimo ERROR (vacia si el token actual no es un ERROR). La usa la Interfaz. */
+    private String mensajeDeError = "";
+
+    // ─── TPC — Tabla de Palabras Clave ───────────────────────────────────────
+    /**
+     * TPC (OBLIGADA por el enunciado: tabla private de Analex).
+     * Mapea: lexema de la palabra clave → nombre del token (entero).
+     * Se consulta al terminar de leer un identificador (estado q2 del DT).
+     */
     private static final HashMap<String, Integer> TPC = new HashMap<>();
 
     static {
@@ -65,400 +101,548 @@ public class Analex {   // Es una cinta de tokens
         // Tipos de datos
         TPC.put("boolean",   Token.TIPO);
         TPC.put("integer",   Token.TIPO);
-        // Agregados en defensa (pizarra)
-        TPC.put("por",       Token.POR);    // "por" → <POR,_>
-        TPC.put("sumi",      Token.SUMA);   // "sumi" → <SUMA,_>
+        // Agregados en defensa (pizarra) — ver interruptor EXTRAS_DEFENSA
+        if (EXTRAS_DEFENSA) {
+            TPC.put("por",   Token.POR);    // "por" → <POR,_>
+            TPC.put("sumi",  Token.SUMA);   // "sumi" → <SUMA,_>
+        }
     }
 
-    // Atributo del TIPO según lexema
-    private int tipoAtr(String lexema) {
-        return lexema.equals("boolean") ? Token.BOOLEAN : Token.INTEGER;
+    /** Atributo del token TIPO segun su lexema: "boolean" → BOOLEAN, "integer" → INTEGER. */
+    private int atributoDelTipo(String lexemaDelTipo) {
+        return lexemaDelTipo.equals("boolean") ? Token.BOOLEAN : Token.INTEGER;
     }
 
-    // ─── Constructor ────────────────────────────────────────────────────────
-    public Analex(Cinta c) {
-        M = c;
-        R = new Token();
+    // ─── Constructor ─────────────────────────────────────────────────────────
+
+    /**
+     * Crea el analizador sobre una cinta y calcula de inmediato el primer token
+     * (queda listo para consultarse con {@link #Preanalisis()}).
+     * @param cintaDeCaracteres la cinta con el programa fuente.
+     */
+    public Analex(Cinta cintaDeCaracteres) {
+        cinta = cintaDeCaracteres;
+        tokenPreanalisis = new Token();
         init();
     }
 
+    /** Reinicia la cinta al principio y calcula otra vez el primer token. */
     public final void init() {
-        M.init();
-        avanzar();      // Calcular el primer preanálisis
+        cinta.init();
+        avanzar();      // Calcular el primer preanalisis
     }
 
+    // ─── Consultar el token actual ───────────────────────────────────────────
+
+    /** @return el token actual (preanalisis). No lo consume: se puede llamar muchas veces. */
     public Token Preanalisis() {
-        return R;
+        return tokenPreanalisis;
     }
 
+    /** @return el texto (lexema) con el que se formo el token actual. */
     public String lexema() {
-        return ac;
+        return acumuladorLexema;
     }
 
+    /** @return por que fallo el analisis si el token actual es ERROR (ej. "literal sin cerrar"); si no, "". */
+    public String getMensajeDeError() {
+        return mensajeDeError;
+    }
+
+    /** Pasa al token siguiente: corre el DT y avisa a la interfaz para resaltarlo. */
     public void avanzar() {
         dt();
         resaltar();
     }
 
-    // ─── DT — Diagrama de Transiciones ──────────────────────────────────────
-    /*
-     * Estados:
-     *   0  - Inicial / entre tokens (ignora espacios y comentarios)
-     *   1  - Acumulando NUM (digitos)
-     *   2  - Acumulando ID o palabra clave (letra + letras/digitos)
-     *   3  - Leimos ':', puede ser DOSPTOS o ASSIGN (:=)
-     *   4  - Leimos '<', puede ser MEN, MEI (<=) o DIS (<>)
-     *   5  - Leimos '>', puede ser MAY o MAI (>=)
-     *   6  - Leimos '!', puede ser DIS (!=) o NOT (!)
-     *   7  - Leimos '/', puede ser DIV, comentario // o comentario /*
-     *   8  - Dentro de comentario de linea (//)
-     *   9  - Dentro de comentario de bloque
-     *   10 - Dentro del comentario de bloque, leimos '*' (posible cierre)
-     *   11 - Acumulando LITERAL con comilla simple
-     *   12 - Acumulando LITERAL con comilla doble
+    // ─── Estados del DT (el numero coincide con el dibujo: q0 ... q13) ───────
+    private static final int Q0_INICIAL                     = 0;   // inicial / entre tokens (ignora espacios y comentarios)
+    private static final int Q1_NUMERO                      = 1;   // acumulando NUM (digitos)
+    private static final int Q2_IDENTIFICADOR               = 2;   // acumulando ID o palabra clave (letra + letras/digitos)
+    private static final int Q3_LEIDO_DOS_PUNTOS            = 3;   // leimos ':'  → DOSPTOS o ASSIGN (:=)
+    private static final int Q4_LEIDO_MENOR                 = 4;   // leimos '<'  → MEN, MEI (<=) o DIS (<>)
+    private static final int Q5_LEIDO_MAYOR                 = 5;   // leimos '>'  → MAY o MAI (>=)
+    private static final int Q6_LEIDO_ADMIRACION            = 6;   // leimos '!'  → DIS (!=) o NOT (!)
+    private static final int Q7_LEIDO_BARRA                 = 7;   // leimos '/'  → DIV, comentario // o comentario /*
+    private static final int Q8_COMENTARIO_DE_LINEA         = 8;   // dentro de un comentario //
+    private static final int Q9_COMENTARIO_DE_BLOQUE        = 9;   // dentro de un comentario /* ... */
+    private static final int Q10_BLOQUE_LEIDO_ASTERISCO     = 10;  // dentro de /* y leimos '*' (posible cierre)
+    private static final int Q11_LITERAL_COMILLA_SIMPLE     = 11;  // acumulando LITERAL con comilla simple
+    private static final int Q12_LITERAL_COMILLA_DOBLE      = 12;  // acumulando LITERAL con comilla doble
+    private static final int Q13_LINEA_LEIDA_SEGUNDA_BARRA  = 13;  // dentro de //, leimos '/' (¿cierra con "//"?)
+
+    // ─── DT — Diagrama de Transiciones ───────────────────────────────────────
+    /**
+     * El DT: lee chars de la cinta hasta formar UN token y lo deja en el preanalisis.
+     * Cada {@code case} del switch es un estado del dibujo (q0 ... q13).
+     * Variables: {@code estadoActual} (en que estado estamos), {@code caracterActual}
+     * (el char bajo el cabezal) y {@code acumuladorLexema} (el texto que se va juntando).
      */
     private void dt() {
-        int estado = 0;
-        ac = "";
-        char c;
+        int estadoActual = Q0_INICIAL;
+        acumuladorLexema = "";
+        mensajeDeError = "";
+        char caracterActual;
 
         while (true) {
-            c = M.cc();
+            caracterActual = cinta.cc();
 
-            switch (estado) {
+            switch (estadoActual) {
 
                 // ── Estado 0: inicio / entre tokens ──────────────────────
-                case 0:
+                case Q0_INICIAL:
                     // Ignorar espacios
-                    if (esEspacio(c)) {
-                        M.avanzar();
+                    if (esEspacio(caracterActual)) {
+                        cinta.avanzar();
                         break;
                     }
 
                     // Marcar posición de inicio del lexema
-                    pos = M.getPos();
+                    posicionInicioLexema = cinta.getPos();
 
-                    if (c == Cinta.EOF) {
-                        R.set(Token.FIN, 0);
+                    if (caracterActual == Cinta.EOF) {
+                        tokenPreanalisis.set(Token.FIN, 0);
                         return;
                     }
 
                     // Dígito → NUM
-                    if (esDigito(c)) {
-                        ac += c;
-                        M.avanzar();
-                        estado = 1;
+                    if (esDigito(caracterActual)) {
+                        acumuladorLexema += caracterActual;
+                        cinta.avanzar();
+                        estadoActual = Q1_NUMERO;
                         break;
                     }
 
                     // Letra → ID o palabra clave
                     // CASE-SENSITIVE: NO convertir a minusculas
-                    if (esLetra(c)) {
-                        ac += c;   // respetar mayusculas/minusculas exactas
-                        M.avanzar();
-                        estado = 2;
+                    if (esLetra(caracterActual)) {
+                        acumuladorLexema += caracterActual;   // respetar mayusculas/minusculas exactas
+                        cinta.avanzar();
+                        estadoActual = Q2_IDENTIFICADOR;
                         break;
                     }
 
                     // Comilla simple → LITERAL
-                    if (c == '\'') {
-                        M.avanzar();
-                        estado = 11;
+                    if (caracterActual == '\'') {
+                        cinta.avanzar();
+                        estadoActual = Q11_LITERAL_COMILLA_SIMPLE;
                         break;
                     }
 
                     // Comilla doble → LITERAL
-                    if (c == '"') {
-                        M.avanzar();
-                        estado = 12;
+                    if (caracterActual == '"') {
+                        cinta.avanzar();
+                        estadoActual = Q12_LITERAL_COMILLA_DOBLE;
                         break;
                     }
 
                     // Operadores de un solo carácter
-                    if (c == '+') { ac = "+"; M.avanzar(); R.set(Token.MAS,   0); return; }
-                    if (c == '-') { ac = "-"; M.avanzar(); R.set(Token.MENOS, 0); return; }
-                    if (c == '*') { ac = "*"; M.avanzar(); R.set(Token.POR,   0); return; }
-                    if (c == '%') { ac = "%"; M.avanzar(); R.set(Token.MOD,   0); return; }
-                    if (c == ',') { ac = ","; M.avanzar(); R.set(Token.COMA,  0); return; }
-                    if (c == ';') { ac = ";"; M.avanzar(); R.set(Token.PTOCOMA, 0); return; }
-                    if (c == '(') { ac = "("; M.avanzar(); R.set(Token.PA,    0); return; }
-                    if (c == ')') { ac = ")"; M.avanzar(); R.set(Token.PC,    0); return; }
-                    if (c == '{') { ac = "{"; M.avanzar(); R.set(Token.BEGIN, 0); return; }
-                    if (c == '}') { ac = "}"; M.avanzar(); R.set(Token.END,   0); return; }
-                    if (c == '&') { ac = "&"; M.avanzar(); R.set(Token.AND,   0); return; }
-                    if (c == '|') { ac = "|"; M.avanzar(); R.set(Token.OR,    0); return; }
+                    if (caracterActual == '+') { acumuladorLexema = "+"; cinta.avanzar(); tokenPreanalisis.set(Token.MAS,   0); return; }
+                    if (caracterActual == '-') { acumuladorLexema = "-"; cinta.avanzar(); tokenPreanalisis.set(Token.MENOS, 0); return; }
+                    if (caracterActual == '*') { acumuladorLexema = "*"; cinta.avanzar(); tokenPreanalisis.set(Token.POR,   0); return; }
+                    if (caracterActual == '%') { acumuladorLexema = "%"; cinta.avanzar(); tokenPreanalisis.set(Token.MOD,   0); return; }
+                    if (caracterActual == ',') { acumuladorLexema = ","; cinta.avanzar(); tokenPreanalisis.set(Token.COMA,  0); return; }
+                    if (caracterActual == ';') { acumuladorLexema = ";"; cinta.avanzar(); tokenPreanalisis.set(Token.PTOCOMA, 0); return; }
+                    if (caracterActual == '(') { acumuladorLexema = "("; cinta.avanzar(); tokenPreanalisis.set(Token.PA,    0); return; }
+                    if (caracterActual == ')') { acumuladorLexema = ")"; cinta.avanzar(); tokenPreanalisis.set(Token.PC,    0); return; }
+                    if (caracterActual == '{') { acumuladorLexema = "{"; cinta.avanzar(); tokenPreanalisis.set(Token.BEGIN, 0); return; }
+                    if (caracterActual == '}') { acumuladorLexema = "}"; cinta.avanzar(); tokenPreanalisis.set(Token.END,   0); return; }
+                    if (caracterActual == '&') { acumuladorLexema = "&"; cinta.avanzar(); tokenPreanalisis.set(Token.AND,   0); return; }
+                    if (caracterActual == '|') { acumuladorLexema = "|"; cinta.avanzar(); tokenPreanalisis.set(Token.OR,    0); return; }
 
                     // Operadores de uno o dos chars
-                    if (c == ':') { ac = ":"; M.avanzar(); estado = 3; break; }
-                    if (c == '<') { ac = "<"; M.avanzar(); estado = 4; break; }
-                    if (c == '>') { ac = ">"; M.avanzar(); estado = 5; break; }
-                    if (c == '!') { ac = "!"; M.avanzar(); estado = 6; break; }
+                    if (caracterActual == ':') { acumuladorLexema = ":"; cinta.avanzar(); estadoActual = Q3_LEIDO_DOS_PUNTOS; break; }
+                    if (caracterActual == '<') { acumuladorLexema = "<"; cinta.avanzar(); estadoActual = Q4_LEIDO_MENOR; break; }
+                    if (caracterActual == '>') { acumuladorLexema = ">"; cinta.avanzar(); estadoActual = Q5_LEIDO_MAYOR; break; }
+                    if (caracterActual == '!') { acumuladorLexema = "!"; cinta.avanzar(); estadoActual = Q6_LEIDO_ADMIRACION; break; }
 
                     // '/' → DIV o comentario
-                    if (c == '/') { M.avanzar(); estado = 7; break; }
+                    if (caracterActual == '/') { cinta.avanzar(); estadoActual = Q7_LEIDO_BARRA; break; }
 
                     // '=' → OPREL IGUAL
-                    if (c == '=') { ac = "="; M.avanzar(); R.set(Token.OPREL, Token.IGUAL); return; }
+                    if (caracterActual == '=') { acumuladorLexema = "="; cinta.avanzar(); tokenPreanalisis.set(Token.OPREL, Token.IGUAL); return; }
 
                     // Char no reconocido → ERROR
-                    ac = "" + c;
-                    M.avanzar();
-                    R.set(Token.ERROR, 0);
+                    acumuladorLexema = "" + caracterActual;
+                    cinta.avanzar();
+                    marcarError("carácter no reconocido '" + caracterActual + "'");
                     return;
 
                 // ── Estado 1: acumulando NUM ──────────────────────────────
-                case 1:
-                    if (esDigito(c)) {
-                        ac += c;
-                        M.avanzar();
+                case Q1_NUMERO:
+                    if (esDigito(caracterActual)) {
+                        acumuladorLexema += caracterActual;
+                        cinta.avanzar();
                     } else {
                         // Retroceso implicito: no avanzamos
                         // Enunciado: <NUM, 30> — atributo SIEMPRE es 30
-                        R.set(Token.NUM, 30);
+                        tokenPreanalisis.set(Token.NUM, 30);
                         return;
                     }
                     break;
 
                 // ── Estado 2: acumulando ID / palabra clave ───────────────
-                case 2:
-                    if (esLetra(c) || esDigito(c)) {
-                        ac += c;   // CASE-SENSITIVE: sin toLowerCase
-                        M.avanzar();
+                case Q2_IDENTIFICADOR:
+                    if (esLetra(caracterActual) || esDigito(caracterActual)) {
+                        acumuladorLexema += caracterActual;   // CASE-SENSITIVE: sin toLowerCase
+                        cinta.avanzar();
                     } else {
                         // Retroceso implícito
-                        // Consultar TPC
-                        if (TPC.containsKey(ac)) {
-                            int nom = TPC.get(ac);
-                            int atr = (nom == Token.TIPO) ? tipoAtr(ac) : 0;
-                            R.set(nom, atr);
+                        // Consultar TPC (si NO es case-sensitive, se busca en minusculas;
+                        // el lexema se conserva tal como se escribio)
+                        String clave = CASE_SENSITIVE ? acumuladorLexema : acumuladorLexema.toLowerCase();
+                        if (TPC.containsKey(clave)) {
+                            int nombreDelToken = TPC.get(clave);
+                            int atributoDelToken = (nombreDelToken == Token.TIPO) ? atributoDelTipo(clave) : 0;
+                            tokenPreanalisis.set(nombreDelToken, atributoDelToken);
                         } else {
                             // No está en la TPC → es un ID
                             // Atributo del ID = -1 (definido en Token.java)
-                            R.set(Token.ID, -1);
+                            tokenPreanalisis.set(Token.ID, -1);
                         }
                         return;
                     }
                     break;
 
                 // ── Estado 3: leímos ':' ──────────────────────────────────
-                case 3:
-                    if (c == '=') {
-                        ac = ":=";
-                        M.avanzar();
-                        R.set(Token.ASSIGN, 0);
+                case Q3_LEIDO_DOS_PUNTOS:
+                    if (caracterActual == '=') {
+                        acumuladorLexema = ":=";
+                        cinta.avanzar();
+                        tokenPreanalisis.set(Token.ASSIGN, 0);
                     } else {
                         // Retroceso implícito — solo era ':'
-                        R.set(Token.DOSPTOS, 0);
+                        tokenPreanalisis.set(Token.DOSPTOS, 0);
                     }
                     return;
 
                 // ── Estado 4: leímos '<' ──────────────────────────────────
-                case 4:
-                    if (c == '=') {
-                        ac = "<=";
-                        M.avanzar();
-                        R.set(Token.OPREL, Token.MEI);
-                    } else if (c == '>') {
-                        ac = "<>";
-                        M.avanzar();
-                        R.set(Token.OPREL, Token.DIS);
+                case Q4_LEIDO_MENOR:
+                    if (caracterActual == '=') {
+                        acumuladorLexema = "<=";
+                        cinta.avanzar();
+                        tokenPreanalisis.set(Token.OPREL, Token.MEI);
+                    } else if (caracterActual == '>') {
+                        acumuladorLexema = "<>";
+                        cinta.avanzar();
+                        tokenPreanalisis.set(Token.OPREL, Token.DIS);
                     } else {
                         // Solo era '<'
-                        R.set(Token.OPREL, Token.MEN);
+                        tokenPreanalisis.set(Token.OPREL, Token.MEN);
                     }
                     return;
 
                 // ── Estado 5: leímos '>' ──────────────────────────────────
-                case 5:
-                    if (c == '=') {
-                        ac = ">=";
-                        M.avanzar();
-                        R.set(Token.OPREL, Token.MAI);
+                case Q5_LEIDO_MAYOR:
+                    if (caracterActual == '=') {
+                        acumuladorLexema = ">=";
+                        cinta.avanzar();
+                        tokenPreanalisis.set(Token.OPREL, Token.MAI);
                     } else {
                         // Solo era '>'
-                        R.set(Token.OPREL, Token.MAY);
+                        tokenPreanalisis.set(Token.OPREL, Token.MAY);
                     }
                     return;
 
                 // ── Estado 6: leímos '!' ──────────────────────────────────
-                case 6:
-                    if (c == '=') {
-                        ac = "!=";
-                        M.avanzar();
-                        R.set(Token.OPREL, Token.DIS);
+                case Q6_LEIDO_ADMIRACION:
+                    if (caracterActual == '=') {
+                        acumuladorLexema = "!=";
+                        cinta.avanzar();
+                        tokenPreanalisis.set(Token.OPREL, Token.DIS);
                     } else {
                         // '!' solo → alias de NOT
-                        R.set(Token.NOT, 0);
+                        tokenPreanalisis.set(Token.NOT, 0);
                     }
                     return;
 
                 // ── Estado 7: leímos '/' ──────────────────────────────────
-                case 7:
-                    if (c == '/') {
+                case Q7_LEIDO_BARRA:
+                    if (caracterActual == '/') {
                         // Comentario de línea //
-                        M.avanzar();
-                        estado = 8;
-                    } else if (c == '*') {
+                        cinta.avanzar();
+                        estadoActual = Q8_COMENTARIO_DE_LINEA;
+                    } else if (caracterActual == '*') {
                         // Comentario de bloque /*
-                        M.avanzar();
-                        estado = 9;
+                        cinta.avanzar();
+                        estadoActual = Q9_COMENTARIO_DE_BLOQUE;
                     } else {
                         // Solo era '/' → DIV
-                        ac = "/";
-                        R.set(Token.DIV, 0);
+                        acumuladorLexema = "/";
+                        tokenPreanalisis.set(Token.DIV, 0);
                         return;
                     }
                     break;
 
                 // ── Estado 8: dentro de comentario de linea // ────────────
                 // Sale con EOLN, EOF, o al encontrar '//' (cierre explicito)
-                case 8:
-                    if (c == Cinta.EOF) {
+                case Q8_COMENTARIO_DE_LINEA:
+                    if (caracterActual == Cinta.EOF) {
                         // Llegó el EOF dentro del comentario → FIN
-                        R.set(Token.FIN, 0);
+                        tokenPreanalisis.set(Token.FIN, 0);
                         return;
-                    } else if (c == Cinta.EOLN) {
+                    } else if (caracterActual == Cinta.EOLN) {
                         // Fin de linea → termina el comentario
-                        M.avanzar();
-                        pos = M.getPos();
-                        estado = 0;
-                    } else if (c == '/') {
+                        cinta.avanzar();
+                        posicionInicioLexema = cinta.getPos();
+                        estadoActual = Q0_INICIAL;
+                    } else if (COMENTARIO_CIERRA_CON_DOBLE_BARRA && caracterActual == '/') {
                         // Posible cierre explicito '//'
-                        M.avanzar();
-                        estado = 13;   // verificar si el siguiente tambien es '/'
+                        cinta.avanzar();
+                        estadoActual = Q13_LINEA_LEIDA_SEGUNDA_BARRA;   // verificar si el siguiente tambien es '/'
                     } else {
-                        M.avanzar();
+                        cinta.avanzar();
                     }
                     break;
 
                 // ── Estado 13: dentro del comentario //, leimos '/' ───────
                 // Si el siguiente char es '/' → cierre explicito del comentario
                 // Si no → seguir ignorando (volver a q8)
-                case 13:
-                    if (c == '/') {
+                case Q13_LINEA_LEIDA_SEGUNDA_BARRA:
+                    if (caracterActual == '/') {
                         // Encontramos '//' → cierra el comentario
-                        M.avanzar();
-                        pos = M.getPos();
-                        estado = 0;   // volver al estado inicial
-                    } else if (c == Cinta.EOF) {
-                        R.set(Token.FIN, 0);
+                        cinta.avanzar();
+                        posicionInicioLexema = cinta.getPos();
+                        estadoActual = Q0_INICIAL;   // volver al estado inicial
+                    } else if (caracterActual == Cinta.EOF) {
+                        tokenPreanalisis.set(Token.FIN, 0);
                         return;
-                    } else if (c == Cinta.EOLN) {
+                    } else if (caracterActual == Cinta.EOLN) {
                         // Fin de linea tambien cierra
-                        M.avanzar();
-                        pos = M.getPos();
-                        estado = 0;
+                        cinta.avanzar();
+                        posicionInicioLexema = cinta.getPos();
+                        estadoActual = Q0_INICIAL;
                     } else {
                         // No era '//' — seguir dentro del comentario
-                        M.avanzar();
-                        estado = 8;
+                        cinta.avanzar();
+                        estadoActual = Q8_COMENTARIO_DE_LINEA;
                     }
                     break;
 
                 // ── Estado 9: dentro de comentario de bloque /* ... */ ────
-                case 9:
-                    if (c == Cinta.EOF) {
+                case Q9_COMENTARIO_DE_BLOQUE:
+                    if (caracterActual == Cinta.EOF) {
                         // EOF dentro de comentario sin cerrar → ERROR
-                        R.set(Token.ERROR, 0);
+                        marcarError("comentario de bloque sin cerrar (falta */)");
                         return;
-                    } else if (c == '*') {
+                    } else if (caracterActual == '*') {
                         // Posible cierre */
-                        M.avanzar();
-                        estado = 10;
+                        cinta.avanzar();
+                        estadoActual = Q10_BLOQUE_LEIDO_ASTERISCO;
                     } else {
-                        M.avanzar();
+                        cinta.avanzar();
                     }
                     break;
 
                 // ── Estado 10: dentro de /* y leímos '*' ─────────────────
-                case 10:
-                    if (c == '/') {
+                case Q10_BLOQUE_LEIDO_ASTERISCO:
+                    if (caracterActual == '/') {
                         // Cierre del comentario */
-                        M.avanzar();
-                        pos = M.getPos();   // actualizar pos
-                        estado = 0;         // volvemos a buscar tokens
-                    } else if (c == '*') {
+                        cinta.avanzar();
+                        posicionInicioLexema = cinta.getPos();   // actualizar posicionInicioLexema
+                        estadoActual = Q0_INICIAL;         // volvemos a buscar tokens
+                    } else if (caracterActual == '*') {
                         // Otro '*' — puede seguir siendo cierre
-                        M.avanzar();
+                        cinta.avanzar();
                         // Seguimos en estado 10
-                    } else if (c == Cinta.EOF) {
-                        R.set(Token.ERROR, 0);
+                    } else if (caracterActual == Cinta.EOF) {
+                        marcarError("comentario de bloque sin cerrar (falta */)");
                         return;
                     } else {
                         // No era '/' — seguimos dentro del comentario
-                        M.avanzar();
-                        estado = 9;
+                        cinta.avanzar();
+                        estadoActual = Q9_COMENTARIO_DE_BLOQUE;
                     }
                     break;
 
                 // ── Estado 11: acumulando LITERAL con comilla simple ──────
-                case 11:
-                    if (c == '\'') {
+                case Q11_LITERAL_COMILLA_SIMPLE:
+                    if (caracterActual == '\'') {
                         // Cierra el literal
-                        M.avanzar();
-                        R.set(Token.LITERAL, 0);
+                        cinta.avanzar();
+                        tokenPreanalisis.set(Token.LITERAL, 0);
                         return;
-                    } else if (c == Cinta.EOF || c == Cinta.EOLN) {
+                    } else if (caracterActual == Cinta.EOF || caracterActual == Cinta.EOLN) {
                         // Literal sin cerrar → ERROR
-                        R.set(Token.ERROR, 0);
+                        marcarError("literal sin cerrar (falta la comilla de cierre)");
                         return;
                     } else {
-                        ac += c;
-                        M.avanzar();
+                        acumuladorLexema += caracterActual;
+                        cinta.avanzar();
                     }
                     break;
 
                 // ── Estado 12: acumulando LITERAL con comilla doble ───────
-                case 12:
-                    if (c == '"') {
+                case Q12_LITERAL_COMILLA_DOBLE:
+                    if (caracterActual == '"') {
                         // Cierra el literal
-                        M.avanzar();
-                        R.set(Token.LITERAL, 0);
+                        cinta.avanzar();
+                        tokenPreanalisis.set(Token.LITERAL, 0);
                         return;
-                    } else if (c == Cinta.EOF || c == Cinta.EOLN) {
+                    } else if (caracterActual == Cinta.EOF || caracterActual == Cinta.EOLN) {
                         // Literal sin cerrar → ERROR
-                        R.set(Token.ERROR, 0);
+                        marcarError("literal sin cerrar (falta la comilla de cierre)");
                         return;
                     } else {
-                        ac += c;
-                        M.avanzar();
+                        acumuladorLexema += caracterActual;
+                        cinta.avanzar();
                     }
                     break;
 
                 default:
                     // Estado desconocido — no debería llegar aquí
-                    R.set(Token.ERROR, 0);
+                    marcarError("estado desconocido del DT");
                     return;
             }
         }
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
-    private boolean esEspacio(char c) {
-        return c == ' ' || c == '\t' || c == Cinta.EOLN;
+    /** Deja el token ERROR en el preanalisis y recuerda el motivo (se muestra en la Interfaz). */
+    private void marcarError(String motivo) {
+        mensajeDeError = motivo;
+        tokenPreanalisis.set(Token.ERROR, 0);
     }
 
-    private boolean esDigito(char c) {
-        return c >= '0' && c <= '9';
+    // ─── Helpers: clasificacion de chars ─────────────────────────────────────
+
+    /** Espacio en blanco para el DT: espacio, TAB o fin de linea. */
+    private boolean esEspacio(char caracter) {
+        return caracter == ' ' || caracter == '\t' || caracter == Cinta.EOLN;
     }
 
-    private boolean esLetra(char c) {
-        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    /** Digito decimal: 0 a 9. */
+    private boolean esDigito(char caracter) {
+        return caracter >= '0' && caracter <= '9';
     }
 
-    // ─── Resaltado (para la Interfaz) ─────────────────────────────────────
+    /** Letra para identificadores: a-z, A-Z (y '_' si {@link #ID_ACEPTA_GUION_BAJO}). */
+    private boolean esLetra(char caracter) {
+        return (caracter >= 'a' && caracter <= 'z') || (caracter >= 'A' && caracter <= 'Z')
+                || (ID_ACEPTA_GUION_BAJO && caracter == '_');
+    }
+
+    // ─── Resaltado (para la Interfaz) ────────────────────────────────────────
+
+    /** Avisa a la cinta que se leyo un lexema; la Interfaz lo usa para pintarlo en el editor. */
     public void resaltar() {
-        M.onComunicate(pos, lexema());
+        cinta.onComunicate(posicionInicioLexema, lexema());
     }
 
-    // ─── Posicion del token actual (fila y columna) ────────────────────────
-    /** Devuelve la fila donde empieza el lexema actual (base 0) */
+    // ─── Posicion en la cinta (fila y columna) ───────────────────────────────
+
+    /** @return la fila donde esta el cabezal de la cinta (base 0), justo despues de leer el token. */
     public int getFila() {
-        return M.getFila();
+        return cinta.getFila();
     }
 
-    /** Devuelve la columna donde empieza el lexema actual (base 0) */
+    /** @return la columna donde esta el cabezal de la cinta (base 0), justo despues de leer el token. */
     public int getColumna() {
-        return M.getColumna();
+        return cinta.getColumna();
+    }
+
+    // ─── toString: para ver el estado del analizador con un print ────────────
+
+    /**
+     * Muestra el token actual, su lexema y la cinta con el cabezal, por ejemplo:
+     * <pre>
+     * Analex{ preanalisis=&lt;ID,-1&gt;, lexema="x", inicioDelLexema=0 }
+     *   Cinta{ cabezal=1, fila=0, columna=1, cc=' ' }
+     *     [x][' '][:][=][' '][1][0][;][EOF]
+     *            ^
+     * </pre>
+     */
+    @Override
+    public String toString() {
+        return "Analex{ preanalisis=" + tokenPreanalisis + ", lexema=\"" + acumuladorLexema
+                + "\", inicioDelLexema=" + posicionInicioLexema + " }\n  "
+                + cinta.toString().replace("\n", "\n  ");
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    //  DEMO POR CONSOLA — una llamada a cada metodo de Analex, con ejemplos
+    //  Ejecutar: clic derecho en Analex.java → Run File (Shift+F6)
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /** Recorre el programa fuente completo imprimiendo un token por linea. */
+    private static void mostrarTodosLosTokens(String programaFuente) {
+        System.out.println("   fuente: \"" + programaFuente.replace("\n", "\\n") + "\"");
+        Analex analizador = new Analex(new Cinta(programaFuente));
+        while (true) {
+            Token tokenActual = analizador.Preanalisis();
+            System.out.printf("      lexema=%-10s nombre=%-2d atributo=%-3d %s%n",
+                    "\"" + analizador.lexema() + "\"", tokenActual.getNom(), tokenActual.getAtr(), tokenActual);
+            if (tokenActual.getNom() == Token.FIN || tokenActual.getNom() == Token.ERROR) break;
+            analizador.avanzar();
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("=== 1. Constructor: new Analex(cinta) calcula el 1er preanálisis ===");
+        Cinta cinta = new Cinta("x := 10;");
+        Analex analizador = new Analex(cinta);
+        System.out.println("   Ya hay un token sin llamar a avanzar():");
+        System.out.println(analizador);
+
+        System.out.println("\n=== 2. Preanalisis() y lexema() — NO consumen nada ===");
+        System.out.println("   Preanalisis() dos veces: " + analizador.Preanalisis() + " " + analizador.Preanalisis());
+        System.out.println("   lexema() = \"" + analizador.lexema() + "\"");
+
+        System.out.println("\n=== 3. avanzar() — pasa al siguiente token (se imprime el analizador completo) ===");
+        while (analizador.Preanalisis().getNom() != Token.FIN) {
+            analizador.avanzar();
+            System.out.println(analizador);
+        }
+
+        System.out.println("\n=== 4. init() — reinicia cinta y vuelve a calcular el primer token ===");
+        analizador.init();
+        System.out.println(analizador);
+
+        System.out.println("\n=== 5. getFila() / getColumna() — posición de la cinta ===");
+        Analex dosLineas = new Analex(new Cinta("a\nb"));
+        System.out.println("   token " + dosLineas.Preanalisis() + " → fila=" + dosLineas.getFila() + " columna=" + dosLineas.getColumna());
+        dosLineas.avanzar();
+        System.out.println("   token " + dosLineas.Preanalisis() + " → fila=" + dosLineas.getFila() + " columna=" + dosLineas.getColumna());
+        System.out.println("   (es la posición del CABEZAL tras leer el token, no donde empieza)");
+
+        System.out.println("\n=== 6. resaltar() → Cinta.onComunicate(posicion, lexema) ===");
+        Cinta cintaEspia = new Cinta("hola mundo") {
+            @Override
+            public void onComunicate(int posicion, String lexema) {
+                System.out.println("   [onComunicate] posicion=" + posicion + " lexema=\"" + lexema + "\"");
+            }
+        };
+        Analex analizadorConAviso = new Analex(cintaEspia);   // el constructor ya resalta "hola"
+        analizadorConAviso.avanzar();                          // resalta "mundo"
+        analizadorConAviso.avanzar();                          // resalta FIN
+
+        System.out.println("\n=== 7. dt() por ejemplos: palabras clave, ID, NUM (TPC) ===");
+        mostrarTodosLosTokens("while x1 123");
+        mostrarTodosLosTokens("integer boolean void");
+
+        System.out.println("\n=== 8. Case-sensitive: solo minúsculas son palabra clave ===");
+        mostrarTodosLosTokens("while WHILE While");
+
+        System.out.println("\n=== 9. Operadores de 1 y 2 caracteres (estados q3, q4, q5, q6) ===");
+        mostrarTodosLosTokens(": := < <= <> > >= ! != =");
+
+        System.out.println("\n=== 10. Alias Java/Pascal ===");
+        mostrarTodosLosTokens("{ } & | % / begin end and or mod div");
+
+        System.out.println("\n=== 11. Comentarios (estados q7, q8, q9, q10, q13) ===");
+        mostrarTodosLosTokens("a // linea\nb");
+        mostrarTodosLosTokens("a /* bloque\nmultilinea */ b");
+        mostrarTodosLosTokens("a // texto // b");
+
+        System.out.println("\n=== 12. LITERAL y ERRORES ===");
+        mostrarTodosLosTokens("\"hola\" 'pascal'");
+        mostrarTodosLosTokens("\"sin cerrar");
+        mostrarTodosLosTokens("/* sin cerrar");
+        mostrarTodosLosTokens("x @ y");
+
+        System.out.println("\n=== 13. Extras de la defensa ===");
+        mostrarTodosLosTokens("por sumi");
+
+        System.out.println("\n=== 14. Programa completo ===");
+        mostrarTodosLosTokens("program p;\nvar n : integer;\nbegin\n  read(n);\n  if (n > 0) then println(n);\nend");
     }
 }

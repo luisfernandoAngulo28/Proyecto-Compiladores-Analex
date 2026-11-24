@@ -1,0 +1,3 @@
+x := 1;
+/* comentario de bloque que nunca se cierra
+y := 2;

@@ -1,0 +1,5 @@
+a // comentario hasta fin de linea
+b /* comentario
+   de varias lineas */ c
+d // comentario cerrado con doble barra // e
+f // comentario hasta el fin de la cinta

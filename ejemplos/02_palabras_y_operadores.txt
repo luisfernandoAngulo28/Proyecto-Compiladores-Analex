@@ -1,0 +1,11 @@
+program ops;
+var a, b, c : integer; ok : boolean;
+void proc() {
+  a := 10 div 3;
+  b := 10 mod 3;
+  c := a por b;
+  c := a sumi b;
+  c := a * b + a - b / 2 % 3;
+  ok := (a <> b) & (a != c) | !(b >= c);
+  if a <= b then print("menor") else println('mayor');
+}

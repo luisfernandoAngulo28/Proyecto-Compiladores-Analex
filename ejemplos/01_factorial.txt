@@ -1,0 +1,16 @@
+// Programa factorial - Pascal+Java
+// case-sensitive: palabras clave en minusculas
+program factorial;
+var
+  n         : integer;
+  resultado : integer;
+
+begin
+  read(n);
+  resultado := 1;
+  while (n > 0) do begin  // loop factorial //
+    resultado := resultado * n;
+    n := n - 1;
+  end;
+  println(resultado);
+end

@@ -17,7 +17,7 @@ nav .logo{color:#7dd3fc;font-weight:700;font-size:.9rem;margin-right:8px}
 
 /* ── HERO ── */
 .hero{background:linear-gradient(135deg,#0f1e38 0%,#14532d 50%,#0d1117 100%);border:2px solid #86efac;border-radius:16px;padding:28px 32px;margin-bottom:28px;position:relative;overflow:hidden}
-.hero::after{content:"🔍";position:absolute;right:28px;top:50%;transform:translateY(-50%);font-size:5rem;opacity:.1}
+.hero::after{content:"";position:absolute;right:28px;top:50%;transform:translateY(-50%);font-size:5rem;opacity:.1}
 .hero .tag{font-size:.7rem;color:#86efac;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
 .hero h1{color:#e2e8f0;font-size:1.6rem;margin-bottom:6px}
 .hero p{color:#94a3b8;font-size:.87rem;line-height:1.7;max-width:580px}
@@ -148,7 +148,7 @@ td:first-child{font-family:monospace;color:#a5f3fc;font-weight:600}
 <body>
 
 <nav>
-  <span class="logo">🔍 Analex — Guía Visual</span>
+  <span class="logo">Analex — Guía Visual</span>
   <button class="nb on" onclick="ir('intro')">Intro</button>
   <button class="nb" onclick="ir('flujo')">Flujo</button>
   <button class="nb" onclick="ir('clases')">Clases</button>
@@ -172,7 +172,7 @@ td:first-child{font-family:monospace;color:#a5f3fc;font-weight:600}
     <span class="chip">Java</span>
     <span class="chip">Pascal + Java híbrido</span>
     <span class="chip">Case-Sensitive</span>
-    <span class="chip">78/78 tests ✓</span>
+    <span class="chip">87/87 tests OK</span>
     <span class="chip">Entrega: 24/Nov/2026</span>
   </div>
 </div>
@@ -180,7 +180,7 @@ td:first-child{font-family:monospace;color:#a5f3fc;font-weight:600}
 <!-- ══ FLUJO ══ -->
 <div class="sec" id="flujo">
   <div class="sec-hdr">
-    <div class="sec-icon">🔄</div>
+    <div class="sec-icon"></div>
     <h2>¿Cómo funciona? — Flujo de datos</h2>
   </div>
 
@@ -191,18 +191,18 @@ td:first-child{font-family:monospace;color:#a5f3fc;font-weight:600}
       y los devuelve uno a uno al Parser.</p>
 
       <div class="flow" style="margin-top:16px">
-        <div class="flow-box">📄 Programa Fuente<br><span style="font-size:.75rem;color:#475569">texto plano</span></div>
+        <div class="flow-box">Programa Fuente<br><span style="font-size:.75rem;color:#475569">texto plano</span></div>
         <div class="flow-arr">↓</div>
         <div class="flow-note">carga el texto</div>
-        <div class="flow-box hl">🎞️ Cinta.java<br><span style="font-size:.75rem;font-weight:400">cc() · avanzar() · init()</span></div>
+        <div class="flow-box hl">Cinta.java<br><span style="font-size:.75rem;font-weight:400">cc() · avanzar() · init()</span></div>
         <div class="flow-arr">↓</div>
         <div class="flow-note">char a char</div>
-        <div class="flow-box hl2">🔍 Analex.java (DT)<br><span style="font-size:.75rem;font-weight:400">dt() · TPC · Preanalisis()</span></div>
+        <div class="flow-box hl2">Analex.java (DT)<br><span style="font-size:.75rem;font-weight:400">dt() · TPC · Preanalisis()</span></div>
         <div class="flow-arr">↓</div>
         <div class="flow-note">token a token</div>
-        <div class="flow-box hl3">🏷️ Token.java<br><span style="font-size:.75rem;font-weight:400">&lt;nom, atr&gt;</span></div>
+        <div class="flow-box hl3">Token.java<br><span style="font-size:.75rem;font-weight:400">&lt;nom, atr&gt;</span></div>
         <div class="flow-arr">↓</div>
-        <div class="flow-box">⚙️ Parser / Interfaz</div>
+        <div class="flow-box">Parser / Interfaz</div>
       </div>
     </div>
 
@@ -249,13 +249,13 @@ td:first-child{font-family:monospace;color:#a5f3fc;font-weight:600}
 <!-- ══ CLASES ══ -->
 <div class="sec" id="clases">
   <div class="sec-hdr">
-    <div class="sec-icon">📦</div>
+    <div class="sec-icon"></div>
     <h2>Las 4 clases del proyecto — qué hace cada una</h2>
   </div>
 
   <div class="grid2">
     <div class="gcard blue">
-      <h4>🏷️ Token.java — El "sobre" del token</h4>
+      <h4>Token.java — El "sobre" del token</h4>
       <p>Guarda <strong>dos números</strong>: el nombre del token (<code>nom</code>) y su atributo (<code>atr</code>).</p>
       <pre style="margin-top:8px;font-size:.78rem"><span class="kw">private int</span> nom;  <span class="cm">// qué tipo es</span>
 <span class="kw">private int</span> atr;  <span class="cm">// valor adicional</span>
@@ -266,7 +266,7 @@ td:first-child{font-family:monospace;color:#a5f3fc;font-weight:600}
     </div>
 
     <div class="gcard green">
-      <h4>🎞️ Cinta.java — La cinta de chars</h4>
+      <h4>Cinta.java — La cinta de chars</h4>
       <p>Serializa el programa fuente char a char. Los 3 métodos que usa el Analex:</p>
       <pre style="margin-top:8px;font-size:.78rem">M.cc()       <span class="cm">// leer char actual</span>
 M.avanzar()  <span class="cm">// mover cabezal →</span>
@@ -278,7 +278,7 @@ Cinta.EOLN = 10  <span class="cm">// fin de línea</span></pre>
     </div>
 
     <div class="gcard purple">
-      <h4>🔍 Analex.java — El scanner</h4>
+      <h4>Analex.java — El scanner</h4>
       <p>Implementa el <strong>Diagrama de Transición (DT)</strong>. Lee la cinta y produce tokens. Tiene la TPC privada.</p>
       <pre style="margin-top:8px;font-size:.78rem"><span class="kw">private</span> Cinta M;    <span class="cm">// la cinta</span>
 <span class="kw">private</span> Token R;    <span class="cm">// token actual</span>
@@ -290,7 +290,7 @@ avanzar()      <span class="cm">// pasar al siguiente</span></pre>
     </div>
 
     <div class="gcard yellow">
-      <h4>🖥️ Interfaz.java — La ventana</h4>
+      <h4>Interfaz.java — La ventana</h4>
       <p>Swing. Editor de código fuente con resaltado del lexema reconocido. Botones Iniciar / Siguiente / Todos.</p>
       <pre style="margin-top:8px;font-size:.78rem">btnIniciar   <span class="cm">// carga el texto</span>
 btnSiguiente <span class="cm">// un token a la vez</span>
@@ -303,7 +303,7 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
 <!-- ══ TPC ══ -->
 <div class="sec" id="tpc">
   <div class="sec-hdr">
-    <div class="sec-icon">📋</div>
+    <div class="sec-icon"></div>
     <h2>TPC — Tabla de Palabras Clave (OBLIGADO por el enunciado)</h2>
   </div>
 
@@ -350,8 +350,8 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
         <tr><td>not and or</td><td class="ta">NOT AND OR</td><td></td></tr>
         <tr><td>mod div</td><td class="ta">MOD DIV</td><td></td></tr>
         <tr><td>boolean integer</td><td class="tp">TIPO</td><td>+ atributo</td></tr>
-        <tr><td style="color:#fbbf24">por</td><td class="ta">POR</td><td style="color:#fbbf24">⭐ defensa</td></tr>
-        <tr><td style="color:#fbbf24">sumi</td><td class="ta">SUMA</td><td style="color:#fbbf24">⭐ defensa</td></tr>
+        <tr><td style="color:#fbbf24">por</td><td class="ta">POR</td><td style="color:#fbbf24">defensa</td></tr>
+        <tr><td style="color:#fbbf24">sumi</td><td class="ta">SUMA</td><td style="color:#fbbf24">defensa</td></tr>
       </table>
     </div>
   </div>
@@ -360,7 +360,7 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
 <!-- ══ ESTADOS ══ -->
 <div class="sec" id="estados">
   <div class="sec-hdr">
-    <div class="sec-icon">🔲</div>
+    <div class="sec-icon"></div>
     <h2>Estados del DT — el método dt()</h2>
   </div>
 
@@ -411,7 +411,7 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
           <span>Dígito → loop (ac+=c)</span>
           <span>Otro → <strong>&lt;NUM,30&gt;</strong></span>
         </div>
-        <p style="margin-top:6px;font-size:.76rem;color:#fbbf24">⚠️ Atributo siempre 30, no el valor del número</p>
+        <p style="margin-top:6px;font-size:.76rem;color:#fbbf24">Atributo siempre 30, no el valor del número</p>
       </div>
     </div>
 
@@ -427,7 +427,7 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
           <span>Letra|Dígito → loop (ac+=c)</span>
           <span>Otro → TPC → KW o <strong>&lt;ID,-1&gt;</strong></span>
         </div>
-        <p style="margin-top:6px;font-size:.76rem;color:#fbbf24">⚠️ Case-sensitive: sin toLowerCase()</p>
+        <p style="margin-top:6px;font-size:.76rem;color:#fbbf24">Case-sensitive: sin toLowerCase()</p>
       </div>
     </div>
 
@@ -562,7 +562,7 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
     <div class="estado e-cmt">
       <div class="estado-hdr">
         <div class="estado-num">13</div>
-        <div class="estado-title">⭐ Cierre // ... //</div>
+        <div class="estado-title">Cierre // ... //</div>
       </div>
       <div class="estado-body">
         <p>Dentro de //, leímos '/'. ¿Es el cierre explícito?</p>
@@ -572,7 +572,7 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
           <span>EOF → <strong>&lt;FIN,_&gt;</strong></span>
           <span>Otro → vuelve q8</span>
         </div>
-        <p style="margin-top:6px;font-size:.76rem;color:#fbbf24">⭐ Agregado en la defensa</p>
+        <p style="margin-top:6px;font-size:.76rem;color:#fbbf24">Agregado en la defensa</p>
       </div>
     </div>
 
@@ -582,7 +582,7 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
 <!-- ══ TOKENS ══ -->
 <div class="sec" id="tokens">
   <div class="sec-hdr">
-    <div class="sec-icon">🏷️</div>
+    <div class="sec-icon"></div>
     <h2>Tabla completa de Tokens — referencia rápida</h2>
   </div>
 
@@ -646,8 +646,8 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
         <div class="qref"><div class="lex">";"</div><div class="tok">&lt;PTOCOMA,_&gt;</div></div>
         <div class="qref"><div class="lex">"(" / ")"</div><div class="tok">&lt;PA,_&gt; / &lt;PC,_&gt;</div></div>
         <div class="qref"><div class="lex">":="</div><div class="tok">&lt;ASSIGN,_&gt;</div></div>
-        <div class="qref" style="border-color:#92400e"><div class="lex" style="color:#fbbf24">"por" ⭐</div><div class="tok">&lt;POR,_&gt;</div><div class="note">defensa</div></div>
-        <div class="qref" style="border-color:#92400e"><div class="lex" style="color:#fbbf24">"sumi" ⭐</div><div class="tok">&lt;SUMA,_&gt;</div><div class="note">defensa</div></div>
+        <div class="qref" style="border-color:#92400e"><div class="lex" style="color:#fbbf24">"por" </div><div class="tok">&lt;POR,_&gt;</div><div class="note">defensa</div></div>
+        <div class="qref" style="border-color:#92400e"><div class="lex" style="color:#fbbf24">"sumi" </div><div class="tok">&lt;SUMA,_&gt;</div><div class="note">defensa</div></div>
       </div>
     </div>
   </div>
@@ -656,13 +656,13 @@ tablaTokens  <span class="cm">// muestra resultados</span></pre>
 <!-- ══ CAMBIOS ══ -->
 <div class="sec" id="cambios">
   <div class="sec-hdr">
-    <div class="sec-icon">⭐</div>
+    <div class="sec-icon"></div>
     <h2>Cambios de la pizarra — aplicados en la defensa</h2>
   </div>
 
   <div class="grid3">
     <div class="gcard green">
-      <h4>1️⃣ Case-Sensitive</h4>
+      <h4>1. Case-Sensitive</h4>
       <p>Quitamos <code>toLowerCase()</code> en los estados 0 y 2.</p>
       <pre style="margin-top:8px;font-size:.76rem"><span class="cm">// ANTES:</span>
 ac += Character.toLowerCase(c);
@@ -670,26 +670,26 @@ ac += Character.toLowerCase(c);
 <span class="cm">// AHORA:</span>
 ac += c;  <span class="cm">// exacto</span></pre>
       <p style="margin-top:6px;font-size:.76rem;color:#94a3b8">
-        <span style="color:#86efac">while</span> → WHILE ✓<br>
-        <span style="color:#f87171">While</span> → ID ✗<br>
-        <span style="color:#f87171">WHILE</span> → ID ✗
+        <span style="color:#86efac">while</span> → WHILE OK<br>
+        <span style="color:#f87171">While</span> → ID NO<br>
+        <span style="color:#f87171">WHILE</span> → ID NO
       </p>
     </div>
 
     <div class="gcard yellow">
-      <h4>2️⃣ Nuevas palabras: por y sumi</h4>
+      <h4>2. Nuevas palabras: por y sumi</h4>
       <p>Dos entradas nuevas en la TPC:</p>
       <pre style="margin-top:8px;font-size:.76rem">TPC.put(<span class="str">"por"</span>,  Token.POR);
 TPC.put(<span class="str">"sumi"</span>, Token.SUMA);</pre>
       <p style="margin-top:6px;font-size:.76rem;color:#94a3b8">
-        <span style="color:#86efac">"por"</span> → &lt;POR,_&gt; ✓<br>
-        <span style="color:#86efac">"sumi"</span> → &lt;SUMA,_&gt; ✓<br>
-        <span style="color:#f87171">"SUMI"</span> → ID (case-sens.) ✗
+        <span style="color:#86efac">"por"</span> → &lt;POR,_&gt; OK<br>
+        <span style="color:#86efac">"sumi"</span> → &lt;SUMA,_&gt; OK<br>
+        <span style="color:#f87171">"SUMI"</span> → ID (case-sens.) NO
       </p>
     </div>
 
     <div class="gcard purple">
-      <h4>3️⃣ Comentario // texto //</h4>
+      <h4>3. Comentario // texto //</h4>
       <p>Nuevo estado 13 en el DT:</p>
       <pre style="margin-top:8px;font-size:.76rem"><span class="cm">// q8 lee '/' → q13</span>
 <span class="kw">case</span> 13:
@@ -700,7 +700,7 @@ TPC.put(<span class="str">"sumi"</span>, Token.SUMA);</pre>
   }</pre>
       <p style="margin-top:6px;font-size:.76rem;color:#94a3b8">
         <code>x // coment // y</code><br>
-        → x e y reconocidos ✓
+        → x e y reconocidos OK
       </p>
     </div>
   </div>
@@ -712,29 +712,29 @@ TPC.put(<span class="str">"sumi"</span>, Token.SUMA);</pre>
       <div>
         <div style="font-size:.75rem;color:#475569;margin-bottom:6px">Cambio 1 — Case-Sensitive</div>
         <div style="font-size:.8rem;color:#86efac;font-family:monospace;line-height:2">
-          ✓ "while" → WHILE<br>
-          ✓ "WHILE" → ID<br>
-          ✓ "While" → ID<br>
-          ✓ "if" → IF<br>
-          ✓ "IF" → ID
+          OK "while" → WHILE<br>
+          OK "WHILE" → ID<br>
+          OK "While" → ID<br>
+          OK "if" → IF<br>
+          OK "IF" → ID
         </div>
       </div>
       <div>
         <div style="font-size:.75rem;color:#475569;margin-bottom:6px">Cambio 2 — Nuevas KW</div>
         <div style="font-size:.8rem;color:#86efac;font-family:monospace;line-height:2">
-          ✓ "por" → &lt;POR,_&gt;<br>
-          ✓ "sumi" → &lt;SUMA,_&gt;<br>
-          ✓ "Por" → ID<br>
-          ✓ "SUMI" → ID
+          OK "por" → &lt;POR,_&gt;<br>
+          OK "sumi" → &lt;SUMA,_&gt;<br>
+          OK "Por" → ID<br>
+          OK "SUMI" → ID
         </div>
       </div>
       <div>
         <div style="font-size:.75rem;color:#475569;margin-bottom:6px">Cambio 3 — Comentario //</div>
         <div style="font-size:.8rem;color:#86efac;font-family:monospace;line-height:2">
-          ✓ // ... EOLN<br>
-          ✓ // ... EOF<br>
-          ✓ // texto // y<br>
-          ✓ /* bloque */
+          OK // ... EOLN<br>
+          OK // ... EOF<br>
+          OK // texto // y<br>
+          OK /* bloque */
         </div>
       </div>
     </div>
@@ -744,29 +744,29 @@ TPC.put(<span class="str">"sumi"</span>, Token.SUMA);</pre>
 <!-- ══ DEFENSA ══ -->
 <div class="sec" id="defensa">
   <div class="sec-hdr">
-    <div class="sec-icon">🎓</div>
+    <div class="sec-icon"></div>
     <h2>Checklist para la defensa</h2>
   </div>
 
   <div class="grid2">
     <div>
-      <p style="color:#fbbf24;font-weight:700;margin-bottom:10px">📋 Qué llevar el día de la defensa:</p>
+      <p style="color:#fbbf24;font-weight:700;margin-bottom:10px">Qué llevar el día de la defensa:</p>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="background:#1c2d1c;border:1px solid #166534;border-radius:8px;padding:10px 14px;font-size:.83rem;color:#86efac">
-          ✅ El proyecto en NetBeans corriendo
+          El proyecto en NetBeans corriendo
         </div>
         <div style="background:#1c2d1c;border:1px solid #166534;border-radius:8px;padding:10px 14px;font-size:.83rem;color:#86efac">
-          ✅ El DT dibujado a mano en papel (OBLIGATORIO del enunciado)
+          El DT dibujado a mano en papel (OBLIGATORIO del enunciado)
         </div>
         <div style="background:#1c2d1c;border:1px solid #166534;border-radius:8px;padding:10px 14px;font-size:.83rem;color:#86efac">
-          ✅ El ZIP entregado antes del 24/Nov/2026 23:59:59
+          El ZIP entregado antes del 24/Nov/2026 23:59:59
         </div>
         <div style="background:#1e3a5f;border:1px solid #2563eb;border-radius:8px;padding:10px 14px;font-size:.83rem;color:#7dd3fc">
-          💡 Abre esta guía en el navegador como referencia rápida
+          Abre esta guía en el navegador como referencia rápida
         </div>
       </div>
 
-      <p style="color:#fbbf24;font-weight:700;margin-top:16px;margin-bottom:10px">❓ Preguntas frecuentes del docente:</p>
+      <p style="color:#fbbf24;font-weight:700;margin-top:16px;margin-bottom:10px">Preguntas frecuentes del docente:</p>
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="background:#12161f;border:1px solid #334155;border-radius:8px;padding:10px 14px">
           <p style="font-size:.8rem;margin-bottom:4px"><strong style="color:#a78bfa">¿Qué es la TPC?</strong></p>
@@ -788,7 +788,7 @@ TPC.put(<span class="str">"sumi"</span>, Token.SUMA);</pre>
     </div>
 
     <div>
-      <p style="color:#fbbf24;font-weight:700;margin-bottom:10px">🔧 Si el docente pide un cambio en el momento:</p>
+      <p style="color:#fbbf24;font-weight:700;margin-bottom:10px">Si el docente pide un cambio en el momento:</p>
 
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="background:#2d1b4e;border:1px solid #6d28d9;border-radius:8px;padding:12px 14px">
@@ -821,12 +821,12 @@ ac += Character.toLowerCase(c);</pre>
 
       <!-- Resumen final -->
       <div style="background:linear-gradient(135deg,#14532d,#0f1e38);border:2px solid #86efac;border-radius:10px;padding:16px;margin-top:14px;text-align:center">
-        <div style="font-size:1.2rem;margin-bottom:8px">🏆</div>
-        <div style="color:#86efac;font-weight:700;font-size:.92rem;margin-bottom:6px">78/78 tests pasando</div>
+        <div style="font-size:1.2rem;margin-bottom:8px"></div>
+        <div style="color:#86efac;font-weight:700;font-size:.92rem;margin-bottom:6px">87/87 tests pasando</div>
         <div style="color:#94a3b8;font-size:.8rem;line-height:1.6">
-          Enunciado completo ✓ · TPC privada ✓<br>
-          Comentarios // y /* */ ✓ · Case-sensitive ✓<br>
-          "por" y "sumi" ✓ · Comentario // ... // ✓
+          Enunciado completo OK · TPC privada OK<br>
+          Comentarios // y /* */ OK · Case-sensitive OK<br>
+          "por" y "sumi" OK · Comentario // ... // OK
         </div>
       </div>
     </div>

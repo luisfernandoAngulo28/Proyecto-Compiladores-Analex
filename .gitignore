@@ -11,3 +11,6 @@ Thumbs.db
 # NetBeans project user files
 nbactions.xml
 nb-configuration.xml
+
+# Respaldos locales
+respaldo-interfaz/
